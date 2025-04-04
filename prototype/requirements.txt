@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+PyPDF2
+docx2txt
+pydantic
+streamlit
+requests
+pandas
