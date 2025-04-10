@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ resume.name|default('IT Portfolio') }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Variables for Theming */
+        :root {
+            /* Primary Colors */
+            --primary-color: #7928ca;      /* Vibrant purple */
+            --secondary-color: #ff0080;    /* Hot pink accent */
+            --gradient-start: #7928ca;     /* Gradient start (purple) */
+            --gradient-end: #ff0080;       /* Gradient end (pink) */
+            
+            /* Background Colors */
+            --bg-dark: #0f172a;            /* Deep navy background */
+            --bg-card: #1e293b;            /* Slightly lighter navy for cards */
+            --bg-light: #f8fafc;           /* Light background for contrast sections */
+            
+            /* Text Colors */
+            --text-light: #f1f5f9;         /* Light text for dark backgrounds */
+            --text-muted: #94a3b8;         /* Muted text color */
+            --text-dark: #1e293b;          /* Dark text for light backgrounds */
+            
+            /* Spacing & Layout */
+            --container-width: 1200px;
+            --section-spacing: 100px;
+            --card-spacing: 25px;
+            --border-radius: 12px;
+            
+            /* Effects */
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        /* Base Reset */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 62.5%; /* 10px = 1rem */
+        }
+
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.7;
+            font-size: 1.6rem;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 2rem;
+            color: var(--text-light);
+        }
+
+        h1 {
+            font-size: 7rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            font-size: 3.6rem;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 4rem;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 4px;
+            bottom: -10px;
+            left: 0;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            border-radius: 10px;
+        }
+
+        h3 {
+            font-size: 2.4rem;
+        }
+
+        p {
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        /* Layout Containers */
+        .container {
+            width: 90%;
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: var(--section-spacing) 0;
+        }
+
+        /* Utility Classes */
+        .text-gradient {
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            border-radius: 5rem;
+            font-weight: 600;
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            z-index: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            color: var(--text-light);
+            box-shadow: 0 4px 15px rgba(255, 0, 128, 0.3);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, var(--gradient-end), var(--gradient-start));
+            z-index: -1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .btn-primary:hover::before {
+            opacity: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(255, 0, 128, 0.4);
+        }
+
+        .btn-outline {
+            border: 2px solid var(--secondary-color);
+            color: var(--text-light);
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            background-color: var(--secondary-color);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: var(--card-spacing);
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .glass-effect {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-header {
+            margin-bottom: 6rem;
+        }
+
+        .section-title {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.8rem;
+            color: var(--text-muted);
+            max-width: 600px;
+        }
+
+        /* Header & Navigation */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 2rem 0;
+            transition: var(--transition);
+        }
+
+        .header.scrolled {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 0;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-text {
+            margin-left: 1rem;
+            color: var(--text-light);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .nav-list {
+            display: flex;
+            gap: 3rem;
+        }
+
+        .nav-link {
+            color: var(--text-light);
+            font-size: 1.6rem;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .mobile-toggle {
+            display: none;
+            font-size: 2.4rem;
+            cursor: pointer;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-top: 8rem;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, rgba(121, 40, 202, 0.1) 0%, transparent 50%);
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 80%, rgba(255, 0, 128, 0.1) 0%, transparent 50%);
+        }
+
+        .hero-content {
+            max-width: 800px;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 7rem;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+        }
+
+        .hero-subtitle {
+            font-size: 2.2rem;
+            margin-bottom: 3rem;
+            color: var(--text-muted);
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+        }
+
+        .hero-scroll-icon {
+            margin-top: 1rem;
+            animation: scrollAnimation 2s ease infinite;
+        }
+
+        @keyframes scrollAnimation {
+            0% { transform: translateY(0); opacity: 1; }
+            50% { transform: translateY(10px); opacity: 0.5; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* About Section */
+        .about-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 4rem;
+        }
+
+        .education-item {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .education-item:hover {
+            transform: translateX(5px);
+        }
+
+        .education-degree {
+            font-size: 2rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .education-school {
+            font-size: 1.6rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .education-location {
+            color: var(--secondary-color);
+            font-style: italic;
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .education-date {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(121, 40, 202, 0.2);
+            border-radius: 20px;
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .education-courses {
+            margin-top: 1.5rem;
+        }
+
+        .education-courses-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+
+        .education-courses-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .education-course {
+            background-color: rgba(255, 0, 128, 0.1);
+            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            font-size: 1.3rem;
+            color: var(--secondary-color);
+        }
+
+        .education-gpa {
+            margin-top: 1.5rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        /* Certifications Section */
+        .certifications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .certification-card {
+            position: relative;
+            padding: 3rem;
+            border-radius: var(--border-radius);
+            background: var(--bg-card);
+            transition: var(--transition);
+            border-bottom: 4px solid transparent;
+            background-image: linear-gradient(var(--bg-card), var(--bg-card)), 
+                             linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+        }
+
+        .certification-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .certification-icon {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        /* Skills Section */
+        .skills-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .skill-category {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            transition: var(--transition);
+        }
+
+        .skill-category:hover {
+            transform: translateY(-5px);
+        }
+
+        .skill-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .skill-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1.5rem;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            color: white;
+            font-size: 2rem;
+        }
+
+        .skill-title {
+            font-size: 2.2rem;
+            margin-bottom: 0;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .skill-tag {
+            padding: 0.8rem 1.5rem;
+            background: rgba(121, 40, 202, 0.1);
+            border-radius: 20px;
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+            transition: var(--transition);
+        }
+
+        .skill-tag:hover {
+            background: rgba(121, 40, 202, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Experience Section */
+        .experience-list {
+            position: relative;
+        }
+
+        .experience-list::before {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--gradient-start), var(--gradient-end));
+        }
+
+        .experience-item {
+            position: relative;
+            padding-left: 4.5rem;
+            padding-bottom: 5rem;
+        }
+
+        .experience-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .experience-dot {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .experience-dot::before {
+            content: '';
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--bg-dark);
+        }
+
+        .experience-content {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            transition: var(--transition);
+        }
+
+        .experience-content:hover {
+            transform: translateX(10px);
+        }
+
+        .experience-title {
+            font-size: 2.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .experience-company {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+
+        .experience-period {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: rgba(121, 40, 202, 0.1);
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            font-size: 1.4rem;
+        }
+
+        .experience-location {
+            display: inline-block;
+            margin-left: 1rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .experience-duties {
+            padding-left: 2rem;
+        }
+
+        .experience-duty {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.6rem;
+            color: var(--text-muted);
+        }
+
+        .experience-duty::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+        }
+
+        /* Projects Section */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 3rem;
+        }
+
+        .project-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .project-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to bottom right, var(--gradient-start), var(--gradient-end));
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .project-content {
+            padding: 3rem;
+        }
+
+        .project-title {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-description {
+            font-size: 1.6rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .project-tech-item {
+            font-size: 1.3rem;
+            padding: 0.5rem 1rem;
+            background: rgba(121, 40, 202, 0.1);
+            color: var(--secondary-color);
+            border-radius: 10px;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .project-link {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(121, 40, 202, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            font-size: 1.8rem;
+            transition: var(--transition);
+        }
+
+        .project-link:hover {
+            background: var(--secondary-color);
+            transform: translateY(-3px);
+        }
+
+        /* Contact Section */
+        .contact-section {
+            position: relative;
+        }
+
+        .contact-container {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-bg {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(121, 40, 202, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+        }
+
+        .contact-bg-1 {
+            top: -150px;
+            left: -150px;
+        }
+
+        .contact-bg-2 {
+            bottom: -150px;
+            right: -150px;
+            background: radial-gradient(circle, rgba(255, 0, 128, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+
+        .contact-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-title {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        .contact-description {
+            font-size: 1.8rem;
+            margin-bottom: 4rem;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .contact-info-item {
+            font-size: 1.8rem;
+            color: var(--text-light);
+        }
+
+        .contact-info-item i {
+            color: var(--secondary-color);
+            margin-right: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .social-link {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, var(--gradient-end), var(--gradient-start));
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .social-link:hover::before {
+            opacity: 1;
+        }
+
+        .social-link:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(121, 40, 202, 0.3);
+        }
+
+        .social-link i {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: rgba(15, 23, 42, 0.8);
+            padding: 4rem 0;
+            text-align: center;
+            position: relative;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-text {
+            font-size: 1.6rem;
+            color: var(--text-muted);
+        }
+
+        .footer-heart {
+            color: var(--secondary-color);
+            font-size: 1.6rem;
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 1024px) {
+            html {
+                font-size: 58%;
+            }
+            
+            .container {
+                width: 90%;
+            }
+            
+            .hero-title {
+                font-size: 6rem;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            html {
+                font-size: 55%;
+            }
+            
+            .nav-list {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 250px;
+                height: 100vh;
+                background-color: var(--bg-card);
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4rem;
+                transition: right 0.3s ease;
+                z-index: 999;
+            }
+            
+            .nav-list.active {
+                right: 0;
+            }
+            
+            .mobile-toggle {
+                display: block;
+                z-index: 1000;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .experience-content {
+                padding: 2rem;
+            }
+            
+            .contact-container {
+                padding: 3rem;
+            }
+            
+            .hero-title {
+                font-size: 5rem;
+            }
+            
+            .section-title {
+                font-size: 3.5rem;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            html {
+                font-size: 50%;
+            }
+            
+            .hero-btns {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .contact-container {
+                padding: 2rem;
+            }
+            
+            .project-links {
+                justify-content: center;
+            }
+            
+            .hero-title {
+                font-size: 4.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">
+                    {% if resume.name is defined %}
+                        {% set name_parts = resume.name.split(' ') %}
+                        {% if name_parts|length > 1 %}
+                            {{ name_parts[0][0] + name_parts[1][0] }}
+                        {% else %}
+                            {{ name_parts[0][0] }}
+                        {% endif %}
+                    {% else %}
+                        P
+                    {% endif %}
+                </div>
+                <span class="logo-text">Portfolio</span>
+            </a>
+            
+            <div class="mobile-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            
+            <ul class="nav-list">
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#skills" class="nav-link">Skills</a></li>
+                <li><a href="#experience" class="nav-link">Experience</a></li>
+                <li><a href="#projects" class="nav-link">Projects</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </header>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <h1 class="hero-title">
+                    {{ resume.name|default('IT Professional') }}
+                </h1>
+                <p class="hero-subtitle">
+                    {% if resume.skills is defined and resume.skills %}
+                        {% set top_skills = [] %}
+                        {% for category, skills in resume.skills.items() %}
+                            {% if category == "Programming Languages" and skills|length > 0 %}
+                                {% for skill in skills %}
+                                    {% if loop.index <= 3 and (top_skills.append(skill) or True) %}{% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if top_skills|length > 0 %}
+                            A passionate IT professional specializing in {{ top_skills[0] }}{% if top_skills|length > 1 %}, {{ top_skills[1] }}{% endif %}{% if top_skills|length > 2 %} and {{ top_skills[2] }}{% endif %}.
+                        {% else %}
+                            A passionate IT professional specializing in creating innovative technology solutions.
+                        {% endif %}
+                    {% else %}
+                        A passionate IT professional specializing in creating innovative technology solutions.
+                    {% endif %}
+                </p>
+                
+                <div class="hero-btns">
+                    <a href="#contact" class="btn btn-primary">Get In Touch</a>
+                    <a href="#projects" class="btn btn-outline">View Projects</a>
+                </div>
+            </div>
+            
+            <div class="hero-scroll">
+                <span>Scroll Down</span>
+                <i class="fas fa-chevron-down hero-scroll-icon"></i>
+            </div>
+        </div>
+    </section>
+    
+    <!-- About/Education Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">About Me</h2>
+                <p class="section-subtitle">Here's a bit about my educational background and the knowledge I've gained through formal study.</p>
+            </div>
+            
+            <div class="about-container">
+                <div class="education-container fade-in">
+                    <h3>Education</h3>
+                    {% if resume.education is defined and resume.education %}
+                        {% for edu in resume.education %}
+                        <div class="education-item fade-in">
+                            <h4 class="education-degree">{{ edu.degree }}</h4>
+                            <p class="education-school">{{ edu.university }}</p>
+                            <p class="education-location">{{ edu.location }}</p>
+                            <span class="education-date">
+                                {% if edu.expected_graduation is defined %}
+                                    Expected Graduation: {{ edu.expected_graduation }}
+                                {% elif edu.period is defined %}
+                                    {{ edu.period }}
+                                {% endif %}
+                            </span>
+                            
+                            {% if edu.related_coursework is defined and edu.related_coursework %}
+                            <div class="education-courses">
+                                <div class="education-courses-title">Related Coursework:</div>
+                                <div class="education-courses-list">
+                                    {% for course in edu.related_coursework %}
+                                    <span class="education-course">{{ course }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if edu.gpa is defined %}
+                            <div class="education-gpa">GPA: {{ edu.gpa }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>Education details not available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Certifications Section -->
+    <section id="certifications" class="certifications">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Certifications</h2>
+                <p class="section-subtitle">Professional certifications that validate my expertise and technical knowledge.</p>
+            </div>
+            
+            <div class="certifications-grid">
+                {% if resume.skills is defined and resume.skills.Certification is defined %}
+                    {% for cert in resume.skills.Certification %}
+                    <div class="certification-card fade-in">
+                        <div class="certification-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <p>{{ cert }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No certifications listed</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    
+    <!-- Skills Section -->
+    <section id="skills" class="skills">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">My Skills</h2>
+                <p class="section-subtitle">I've acquired a diverse range of skills throughout my career. Here's a selection of my technical competencies.</p>
+            </div>
+            
+            <div class="skills-container">
+                {% if resume.skills is defined and resume.skills %}
+                    {% for category, skills in resume.skills.items() %}
+                        {% if category != "Certification" %}
+                        <div class="skill-category fade-in">
+                            <div class="skill-header">
+                                <div class="skill-icon">
+                                    {% if category == "Programming Languages" %}
+                                        <i class="fas fa-code"></i>
+                                    {% elif category == "Databases & Tools" %}
+                                        <i class="fas fa-database"></i>
+                                    {% elif category == "Statistical & ML Techniques" %}
+                                        <i class="fas fa-brain"></i>
+                                    {% elif category == "Cloud Platform and DevOps" %}
+                                        <i class="fas fa-cloud"></i>
+                                    {% elif category == "Libraries & Frameworks" %}
+                                        <i class="fas fa-layer-group"></i>
+                                    {% else %}
+                                        <i class="fas fa-cogs"></i>
+                                    {% endif %}
+                                </div>
+                                <h3 class="skill-title">{{ category }}</h3>
+                            </div>
+                            <div class="skills-list">
+                                {% for skill in skills %}
+                                <span class="skill-tag">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p>Skills information not available</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    
+    <!-- Experience Section -->
+    <section id="experience" class="experience">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Work Experience</h2>
+                <p class="section-subtitle">My professional journey and the roles that have shaped my career path.</p>
+            </div>
+            
+            <div class="experience-list">
+                {% if resume.work_experience is defined and resume.work_experience %}
+                    {% for job in resume.work_experience %}
+                    <div class="experience-item fade-in">
+                        <div class="experience-dot"></div>
+                        <div class="experience-content">
+                            <h3 class="experience-title">{{ job.title }}</h3>
+                            <p class="experience-company">{{ job.company }}</p>
+                            <span class="experience-period">{{ job.period }}
+                                {% if job.location is defined %}
+                                <span class="experience-location">{{ job.location }}</span>
+                                {% endif %}
+                            </span>
+                            
+                            {% if job.responsibilities is defined and job.responsibilities %}
+                            <ul class="experience-duties">
+                                {% for responsibility in job.responsibilities %}
+                                <li class="experience-duty">{{ responsibility }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Work experience information not available</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    
+    <!-- Projects Section -->
+    <section id="projects" class="projects">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Projects</h2>
+                <p class="section-subtitle">A showcase of my technical work and significant projects I've built.</p>
+            </div>
+            
+            <div class="projects-grid">
+                {% if resume.projects is defined and resume.projects %}
+                    {% for project in resume.projects %}
+                    <div class="project-card fade-in">
+                        <div class="project-image">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">{{ project.name }}</h3>
+                            <p class="project-description">{{ project.description }}</p>
+                            
+                            {% if project.technologies is defined and project.technologies %}
+                            <div class="project-tech">
+                                {% for tech in project.technologies %}
+                                <span class="project-tech-item">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="project-links">
+                                {% if project.url is defined %}
+                                <a href="{{ project.url }}" class="project-link" target="_blank" rel="noopener noreferrer">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No projects listed</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <div class="contact-container">
+                <div class="contact-bg contact-bg-1"></div>
+                <div class="contact-bg contact-bg-2"></div>
+                
+                <div class="contact-content fade-in">
+                    <h2 class="contact-title">Get In Touch</h2>
+                    <p class="contact-description">I'm currently available for freelance work and job opportunities. Feel free to reach out!</p>
+                    
+                    <div class="contact-info">
+                        {% if resume is defined %}
+                            {% if resume.email is defined %}
+                            <span class="contact-info-item">
+                                <i class="fas fa-envelope"></i>{{ resume.email }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if resume.phone is defined %}
+                            <span class="contact-info-item">
+                                <i class="fas fa-phone-alt"></i>{{ resume.phone }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if resume.location is defined %}
+                            <span class="contact-info-item">
+                                <i class="fas fa-map-marker-alt"></i>{{ resume.location }}
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="social-links">
+                        {% if resume is defined and resume.LinkedIn is defined %}
+                        <a href="{{ resume.LinkedIn }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if resume is defined and resume.GitHub is defined %}
+                        <a href="{{ resume.GitHub }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if resume is defined and resume.email is defined %}
+                        <a href="mailto:{{ resume.email }}" class="social-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">
+                Designed & Built with <span class="footer-heart">❤</span> by {{ resume.name|default('Portfolio Generator') }} © <span id="current-year">2025</span>
+            </p>
+        </div>
+    </footer>
+    
+    <script>
+        // DOM Elements
+        const header = document.querySelector('.header');
+        const mobileToggle = document.querySelector('.mobile-toggle');
+        const navList = document.querySelector('.nav-list');
+        const fadeElements = document.querySelectorAll('.fade-in');
+        
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Mobile Navigation Toggle
+        mobileToggle.addEventListener('click', () => {
+            navList.classList.toggle('active');
+            
+            // Toggle icon
+            const icon = mobileToggle.querySelector('i');
+            if (navList.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+        
+        // Close mobile menu when clicking a nav link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navList.classList.remove('active');
+                const icon = mobileToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            });
+        });
+        
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const headerHeight = header.getBoundingClientRect().height;
+                    const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                    
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Intersection Observer for fade-in animation
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        fadeElements.forEach(element => {
+            observer.observe(element);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+
+# Web Framework & API
+fastapi
+uvicorn
+python-multipart
+
+# Templating
+jinja2
+
+# Data Processing
+python-dotenv
+json5
+
+# File Handling
+pathlib
+tempfile
+
+# GitHub Integration
+PyGithub
+requests
+
+# UI Framework
+streamlit
+
+# AI Integration
+google-generativeai
+
+# Utilities
+pillow # for image handling in Streamlit
