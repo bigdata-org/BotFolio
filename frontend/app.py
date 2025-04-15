@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 import os
 import json
@@ -8,21 +10,27 @@ from dotenv import load_dotenv
 import requests
 import tempfile
 import copy
+import google.generativeai as genai
+import time
 
 load_dotenv()
 
 # Load environment variables
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") 
 GITHUB_USERNAME = os.getenv("GITHUB_USERNAME")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# template directory
+# Configure Gemini API
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Template directory
 TEMPLATE_DIR = Path(__file__).parent.parent / "backend" / "templates"
 
 # Set up the correct path to your images
 PREVIEW_DIR = Path(__file__).parent.parent / "backend" / "static" / "images"
 os.makedirs(PREVIEW_DIR, exist_ok=True)
 
-
+# Define themes with descriptions
 THEMES = {
     "Theme 1": {
         "file": "theme1.html",
@@ -42,20 +50,91 @@ THEMES = {
     }
 }
 
+# Gemini System Prompt for Resume Editing (as a regular prompt, not a system prompt)
+RESUME_EDITOR_INSTRUCTIONS = """
+You are a resume assistant that helps users edit their portfolio JSON data. 
+Your task is to update a JSON resume based on the user's instructions.
+
+The JSON resume has the following structure:
+{
+  "about": {
+    "name": "Full Name",
+    "location": "City, State",
+    "email": "email@example.com",
+    "phone": "Phone number",
+    "linkedin_hyperlink": "LinkedIn URL",
+    "github_hyperlink": "GitHub URL",
+    "summary": "Professional summary paragraph"
+  },
+  "education": [
+    {
+      "university": "University Name",
+      "location": "University Location",
+      "degree": "Degree Name",
+      "period": "Month Year - Month Year",
+      "related_coursework": ["Course 1", "Course 2", "Course 3"],
+      "gpa": "GPA Value"
+    }
+  ],
+  "skills": [
+    {
+      "category": "Category Name",
+      "skills": ["Skill 1", "Skill 2", "Skill 3"]
+    }
+  ],
+  "experience": [
+    {
+      "company": "Company Name",
+      "position": "Job Title",
+      "location": "Job Location",
+      "period": "Month Year - Month Year",
+      "responsibilities": ["Responsibility 1", "Responsibility 2", "Responsibility 3"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Project description",
+      "technologies": ["Tech 1", "Tech 2", "Tech 3"],
+      "url": "Project URL"
+    }
+  ],
+  "accomplishments": [
+    {
+      "title": "Accomplishment Title",
+      "date": "Month Year",
+      "link": "Relevant URL"
+    }
+  ]
+}
+
+Follow these rules:
+1. Maintain the exact JSON structure - do not add or remove any top-level keys
+2. Format dates consistently as "Month Year" (e.g., "January 2023")
+3. Return ONLY valid JSON without any other text or explanations
+4. Make sure comma placement is correct and the JSON will parse properly
+5. Preserve information that the user doesn't explicitly ask to change
+6. Use proper capitalization and professional language
+7. For lists (like skills, responsibilities), maintain them as valid JSON arrays
+8. If adding a new item to an array (like a new job or project), follow the same structure as existing items
+
+If the user asks to add a new entry (education, job, project, etc.), create a complete entry with all required fields.
+If any fields would be empty, use reasonable placeholder text that the user can edit later.
+"""
+
 def render_html(resume_json, template_file):
     """Render HTML template with resume data"""
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
     template = env.get_template(template_file)
     return template.render(resume=resume_json)
 
-def create_github_repo(username, html_content, resume_json, template_file):
+def create_github_repo(repo_name, html_content, resume_json, template_file):
     """Create and deploy GitHub repository with portfolio"""
     g = Github(GITHUB_TOKEN)
     user = g.get_user()
-    repo_name = f"{username.replace(' ', '-').lower()}-portfolio"
+    #repo_name = f"{username.replace(' ', '-').lower()}-portfolio"
     
     try:
-        
         try:
             repo = user.create_repo(repo_name, private=False, auto_init=True)
         except:
@@ -108,8 +187,7 @@ jobs:
             try:
                 repo.create_file(".github/workflows/deploy.yaml", "Add CI workflow", workflow, branch="main")
             except:
-                
-                pass  # GitHub will create directories automatically when creating files
+                pass
         
         # Enable GitHub Pages
         enable_github_pages(repo_name)
@@ -167,212 +245,245 @@ def display_theme_selector():
                 st.session_state.selected_theme = theme_name
                 st.session_state.theme_selected = True
                 st.success(f"✅ You selected **{theme_name}**.")
-                return  
+                return
 
-def edit_resume_data(resume_data):
-    """Interactive editor for resume data with unique keys for all elements"""
-    edited_resume = copy.deepcopy(resume_data)
+def display_resume_json(resume_data):
+    """Display the resume data in a readable format"""
     
-    with st.expander("Edit Personal Information", expanded=True):
-        # Determine the correct structure based on the JSON
-        if "personal_info" in resume_data:
-            # Old structure
-            personal_info = edited_resume.get("personal_info", {})
-            personal_info["name"] = st.text_input("Full Name", personal_info.get("name", ""), key="personal_name")
-            personal_info["email"] = st.text_input("Email", personal_info.get("email", ""), key="personal_email")
-            personal_info["phone"] = st.text_input("Phone", personal_info.get("phone", ""), key="personal_phone")
-            personal_info["location"] = st.text_input("Location", personal_info.get("location", ""), key="personal_location")
-            personal_info["linkedin"] = st.text_input("LinkedIn Username", personal_info.get("linkedin", ""), key="personal_linkedin")
-            personal_info["github"] = st.text_input("GitHub Username", personal_info.get("github", ""), key="personal_github")
-            edited_resume["personal_info"] = personal_info
-        else:
-            # New structure
-            edited_resume["name"] = st.text_input("Full Name", edited_resume.get("name", ""), key="direct_name")
-            edited_resume["email"] = st.text_input("Email", edited_resume.get("email", ""), key="direct_email")
-            edited_resume["phone"] = st.text_input("Phone", edited_resume.get("phone", ""), key="direct_phone")
-            edited_resume["location"] = st.text_input("Location", edited_resume.get("location", ""), key="direct_location")
-            edited_resume["LinkedIn"] = st.text_input("LinkedIn URL", edited_resume.get("LinkedIn", ""), key="direct_linkedin")
-            edited_resume["GitHub"] = st.text_input("GitHub URL", edited_resume.get("GitHub", ""), key="direct_github")
+    # Create a unique key for the container to force rerendering
+    if "preview_key" not in st.session_state:
+        st.session_state.preview_key = 0
     
-    with st.expander("Edit Education"):
-        if "education" in resume_data:
-            education_list = edited_resume.get("education", [])
+    # Increment the key each time we display to force refreshing
+    st.session_state.preview_key += 1
+    
+    # Use a container with the unique key to force redrawing
+    with st.container(key=f"preview_container_{st.session_state.preview_key}"):
+        # About section
+        if "about" in resume_data:
+            about = resume_data["about"]
+            st.subheader("📋 Personal Information")
             
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**Name:** {about.get('name', 'Not specified')}")
+                st.markdown(f"**Email:** {about.get('email', 'Not specified')}")
+                st.markdown(f"**Phone:** {about.get('phone', 'Not specified')}")
+            with col2:
+                st.markdown(f"**Location:** {about.get('location', 'Not specified')}")
+                st.markdown(f"**LinkedIn:** {about.get('linkedin_hyperlink', 'Not specified')}")
+                st.markdown(f"**GitHub:** {about.get('github_hyperlink', 'Not specified')}")
             
-            updated_education = []
-            for i, edu in enumerate(education_list):
-                st.markdown(f"### Education #{i+1}")
-                
-                
-                if "institution" in edu:
-                    # Old structure
-                    edu_item = {
-                        "institution": st.text_input(f"Institution #{i+1}", edu.get("institution", ""), key=f"edu_inst_{i}"),
-                        "degree": st.text_input(f"Degree #{i+1}", edu.get("degree", ""), key=f"edu_degree_{i}"),
-                        "start_date": st.text_input(f"Start Date #{i+1}", edu.get("start_date", ""), key=f"edu_start_{i}"),
-                        "end_date": st.text_input(f"End Date #{i+1}", edu.get("end_date", ""), key=f"edu_end_{i}")
-                    }
-                else:
-                    # New structure
-                    edu_item = {
-                        "university": st.text_input(f"University #{i+1}", edu.get("university", ""), key=f"edu_uni_{i}"),
-                        "location": st.text_input(f"Location #{i+1}", edu.get("location", ""), key=f"edu_loc_{i}"),
-                        "degree": st.text_input(f"Degree #{i+1}", edu.get("degree", ""), key=f"edu_deg_{i}")
-                    }
-                    
-                    if "expected_graduation" in edu:
-                        edu_item["expected_graduation"] = st.text_input(f"Expected Graduation #{i+1}", 
-                                                                      edu.get("expected_graduation", ""), key=f"edu_grad_{i}")
-                    elif "period" in edu:
-                        edu_item["period"] = st.text_input(f"Period #{i+1}", edu.get("period", ""), key=f"edu_period_{i}")
-                    
-                    if "related_coursework" in edu:
-                        coursework_str = ", ".join(edu.get("related_coursework", []))
-                        new_coursework = st.text_input(f"Related Coursework #{i+1} (comma-separated)", 
-                                                     coursework_str, key=f"edu_courses_{i}")
-                        edu_item["related_coursework"] = [course.strip() for course in new_coursework.split(",")] if new_coursework else []
+            if "summary" in about:
+                st.markdown(f"**Summary:** {about['summary']}")
+            
+            st.markdown("---")
+        
+        # Education section
+        if "education" in resume_data and resume_data["education"]:
+            st.subheader("🎓 Education")
+            for i, edu in enumerate(resume_data["education"]):
+                with st.expander(f"{edu.get('university', 'University')} - {edu.get('degree', 'Degree')}"):
+                    st.markdown(f"**University:** {edu.get('university', 'Not specified')}")
+                    st.markdown(f"**Location:** {edu.get('location', 'Not specified')}")
+                    st.markdown(f"**Degree:** {edu.get('degree', 'Not specified')}")
+                    st.markdown(f"**Period:** {edu.get('period', 'Not specified')}")
                     
                     if "gpa" in edu:
-                        edu_item["gpa"] = st.text_input(f"GPA #{i+1}", edu.get("gpa", ""), key=f"edu_gpa_{i}")
-                
-                updated_education.append(edu_item)
-                st.markdown("---")
-            
-            edited_resume["education"] = updated_education
-    
-    with st.expander("Edit Skills"):
-        if "skills" in resume_data:
-            skills = edited_resume.get("skills", {})
-            
-            # For each skill category
-            updated_skills = {}
-            for idx, (category, skill_list) in enumerate(skills.items()):
-                st.markdown(f"### {category}")
-                
-                
-                safe_category = f"skills_cat_{idx}"
-                skills_str = ", ".join(skill_list)
-                new_skills = st.text_input(f"Skills for {category} (comma-separated)", skills_str, key=safe_category)
-                updated_skills[category] = [skill.strip() for skill in new_skills.split(",")] if new_skills else []
-                
-                st.markdown("---")
-            
-            edited_resume["skills"] = updated_skills
-    
-    with st.expander("Edit Work Experience"):
-        if "work_experience" in resume_data:
-            experience_list = edited_resume.get("work_experience", [])
-            
-            # For each work experience entry
-            updated_experience = []
-            for i, exp in enumerate(experience_list):
-                st.markdown(f"### Work Experience #{i+1}")
-                
-                # Check which structure we're dealing with
-                if "role" in exp:
-                    # Old structure
-                    exp_item = {
-                        "company": st.text_input(f"Company #{i+1}", exp.get("company", ""), key=f"exp_company_{i}"),
-                        "role": st.text_input(f"Role #{i+1}", exp.get("role", ""), key=f"exp_role_{i}"),
-                        "start_date": st.text_input(f"Start Date #{i+1}", exp.get("start_date", ""), key=f"exp_start_{i}"),
-                        "end_date": st.text_input(f"End Date #{i+1}", exp.get("end_date", ""), key=f"exp_end_{i}")
-                    }
-                else:
-                    # New structure
-                    exp_item = {
-                        "company": st.text_input(f"Company #{i+1}", exp.get("company", ""), key=f"exp_company_{i}"),
-                        "title": st.text_input(f"Title #{i+1}", exp.get("title", ""), key=f"exp_title_{i}"),
-                        "period": st.text_input(f"Period #{i+1}", exp.get("period", ""), key=f"exp_period_{i}"),
-                        "location": st.text_input(f"Location #{i+1}", exp.get("location", ""), key=f"exp_loc_{i}")
-                    }
-                
-                # Handle responsibilities
-                if "responsibilities" in exp:
-                    resp_list = exp.get("responsibilities", [])
-                    updated_resp = []
+                        st.markdown(f"**GPA:** {edu['gpa']}")
                     
-                    for j, resp in enumerate(resp_list):
-                        new_resp = st.text_area(f"Responsibility #{i+1}.{j+1}", resp, key=f"resp_{i}_{j}")
-                        updated_resp.append(new_resp)
-                    
-                    # Option to add a new responsibility
-                    if st.button(f"+ Add Responsibility for Job #{i+1}", key=f"add_resp_{i}"):
-                        updated_resp.append("")
-                    
-                    exp_item["responsibilities"] = updated_resp
-                
-                updated_experience.append(exp_item)
-                st.markdown("---")
+                    if "related_coursework" in edu and edu["related_coursework"]:
+                        st.markdown("**Related Coursework:**")
+                        for course in edu["related_coursework"]:
+                            st.markdown(f"- {course}")
             
-            edited_resume["work_experience"] = updated_experience
-    
-    with st.expander("Edit Projects"):
-        if "projects" in resume_data:
-            project_list = edited_resume.get("projects", [])
-            
-            # For each project entry
-            updated_projects = []
-            for i, proj in enumerate(project_list):
-                st.markdown(f"### Project #{i+1}")
-                
-                # Check which structure we're dealing with
-                if "title" in proj:
-                    # Old structure
-                    proj_item = {
-                        "title": st.text_input(f"Project Title #{i+1}", proj.get("title", ""), key=f"proj_title_{i}"),
-                        "description": st.text_area(f"Project Description #{i+1}", proj.get("description", ""), key=f"proj_desc_{i}"),
-                        "github_url": st.text_input(f"GitHub URL #{i+1}", proj.get("github_url", ""), key=f"proj_github_{i}")
-                    }
-                else:
-                    # New structure
-                    proj_item = {
-                        "name": st.text_input(f"Project Name #{i+1}", proj.get("name", ""), key=f"proj_name_{i}"),
-                        "description": st.text_area(f"Project Description #{i+1}", proj.get("description", ""), key=f"proj_desc_{i}"),
-                        "url": st.text_input(f"Project URL #{i+1}", proj.get("url", ""), key=f"proj_url_{i}")
-                    }
-                
-                # Handle technologies
-                if "technologies" in proj:
-                    tech_str = ", ".join(proj.get("technologies", []))
-                    new_tech = st.text_input(f"Technologies for Project #{i+1} (comma-separated)", 
-                                           tech_str, key=f"proj_tech_{i}")
-                    proj_item["technologies"] = [tech.strip() for tech in new_tech.split(",")] if new_tech else []
-                
-                updated_projects.append(proj_item)
-                st.markdown("---")
-            
-            edited_resume["projects"] = updated_projects
-    
-    # Export JSON button
-    if st.button("Save Edited Resume", key="save_resume_button"):
-        # Create a temporary file to download the edited JSON
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
-            tmp.write(json.dumps(edited_resume, indent=2).encode())
-            tmp_path = tmp.name
+            st.markdown("---")
         
-        # Offer download
-        with open(tmp_path, "rb") as f:
-            st.download_button(
-                label="Download Edited Resume JSON",
-                data=f,
-                file_name="edited_resume.json",
-                mime="application/json",
-                key="download_json_button"
-            )
+        # Skills section
+        if "skills" in resume_data and resume_data["skills"]:
+            st.subheader("🔧 Skills")
+            for skill_group in resume_data["skills"]:
+                with st.expander(skill_group.get("category", "Skills")):
+                    if "skills" in skill_group and skill_group["skills"]:
+                        st.markdown(", ".join(skill_group["skills"]))
+            
+            st.markdown("---")
         
-        # Clean up the temp file
-        os.unlink(tmp_path)
+        # Experience section
+        if "experience" in resume_data and resume_data["experience"]:
+            st.subheader("💼 Work Experience")
+            for i, exp in enumerate(resume_data["experience"]):
+                with st.expander(f"{exp.get('position', 'Position')} at {exp.get('company', 'Company')}"):
+                    st.markdown(f"**Company:** {exp.get('company', 'Not specified')}")
+                    st.markdown(f"**Position:** {exp.get('position', 'Not specified')}")
+                    st.markdown(f"**Period:** {exp.get('period', 'Not specified')}")
+                    st.markdown(f"**Location:** {exp.get('location', 'Not specified')}")
+                    
+                    if "responsibilities" in exp and exp["responsibilities"]:
+                        st.markdown("**Responsibilities:**")
+                        for resp in exp["responsibilities"]:
+                            st.markdown(f"- {resp}")
+            
+            st.markdown("---")
+        
+        # Projects section
+        if "projects" in resume_data and resume_data["projects"]:
+            st.subheader("🚀 Projects")
+            for i, proj in enumerate(resume_data["projects"]):
+                with st.expander(proj.get("name", "Project")):
+                    st.markdown(f"**Name:** {proj.get('name', 'Not specified')}")
+                    st.markdown(f"**Description:** {proj.get('description', 'Not specified')}")
+                    
+                    if "url" in proj and proj["url"]:
+                        st.markdown(f"**URL:** {proj['url']}")
+                    
+                    if "technologies" in proj and proj["technologies"]:
+                        st.markdown("**Technologies:**")
+                        st.markdown(", ".join(proj["technologies"]))
+            
+            st.markdown("---")
+        
+        # Accomplishments section
+        if "accomplishments" in resume_data and resume_data["accomplishments"]:
+            st.subheader("🏆 Accomplishments")
+            for i, accom in enumerate(resume_data["accomplishments"]):
+                with st.expander(accom.get("title", "Accomplishment")):
+                    st.markdown(f"**Title:** {accom.get('title', 'Not specified')}")
+                    st.markdown(f"**Date:** {accom.get('date', 'Not specified')}")
+                    
+                    if "link" in accom and accom["link"]:
+                        st.markdown(f"**Link:** {accom['link']}")
+            
+            st.markdown("---")
+
+def create_llm_based_editor(resume_data):
+    """Create an LLM-based chat editor for resume data"""
     
-    return edited_resume
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hello! I'm your AI resume editor. Please tell me what changes you'd like to make to your resume. You can say things like:\n\n- Update my job title at Google to 'Senior Software Engineer'\n- Add a new project called 'Portfolio Generator'\n- Update my skills to include 'React', 'Node.js', and 'Python'\n- Add a new work experience"}
+        ]
+    
+    # Display chat messages
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+    
+    # User input
+    if prompt := st.chat_input("What would you like to edit in your resume?"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.write(prompt)
+        
+        # Prepare the context for Gemini
+        resume_json_str = json.dumps(resume_data, indent=2)
+        
+        # Set up Gemini model
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-pro",
+            generation_config={
+                "temperature": 0.2,
+                "top_p": 0.8,
+                "top_k": 40,
+                "max_output_tokens": 8192,
+            }
+        )
+        
+        # Build the prompt with instructions
+        full_prompt = f"""
+{RESUME_EDITOR_INSTRUCTIONS}
+
+Here is my current resume JSON:
+```json
+{resume_json_str}
+```
+
+Edit request: {prompt}
+
+Please provide only the updated JSON.
+"""
+        
+        # Show spinner while processing
+        with st.spinner("Updating your resume..."):
+            try:
+                # Get response without using system prompts
+                response = model.generate_content(full_prompt)
+                
+                # Extract the JSON from the response
+                response_text = response.text
+                
+                # Try to parse the response as JSON
+                try:
+                    # Find JSON content in the response if it's wrapped in backticks
+                    if "```json" in response_text:
+                        json_content = response_text.split("```json")[1].split("```")[0].strip()
+                    elif "```" in response_text:
+                        json_content = response_text.split("```")[1].strip()
+                    else:
+                        json_content = response_text
+                    
+                    # Parse JSON
+                    updated_resume = json.loads(json_content)
+                    
+                    # Update session state with the updated resume
+                    st.session_state.edited_resume = updated_resume
+                    
+                    # Set a flag to indicate the resume was updated
+                    st.session_state.resume_updated = True
+                    
+                    # Create assistant response
+                    assistant_response = "✅ I've updated your resume! Here's what changed:\n\n"
+                    
+                    # Identify the changes (simplified version)
+                    if "about" in prompt.lower():
+                        assistant_response += "- Updated your personal information\n"
+                    if "education" in prompt.lower() or "university" in prompt.lower() or "degree" in prompt.lower():
+                        assistant_response += "- Updated your education details\n"
+                    if "skill" in prompt.lower():
+                        assistant_response += "- Updated your skills\n"
+                    if "experience" in prompt.lower() or "job" in prompt.lower() or "work" in prompt.lower():
+                        assistant_response += "- Updated your work experience\n"
+                    if "project" in prompt.lower():
+                        assistant_response += "- Updated your projects\n"
+                    if "accomplishment" in prompt.lower() or "award" in prompt.lower() or "certification" in prompt.lower():
+                        assistant_response += "- Updated your accomplishments\n"
+                    
+                    assistant_response += "\nYou can see the changes in the resume preview. Is there anything else you'd like to update?"
+                    
+                except json.JSONDecodeError:
+                    # If can't parse as JSON, show error and original response
+                    st.error("I couldn't generate valid JSON. Please try a different request.")
+                    assistant_response = f"I had trouble updating your resume. Could you please rephrase your request? Here's what I tried to do:\n\n{response_text}"
+                    
+                    # Keep the original resume
+                    st.session_state.edited_resume = resume_data
+                    st.session_state.resume_updated = False
+            
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+                assistant_response = "I encountered an error while trying to update your resume. Please try again."
+                st.session_state.edited_resume = resume_data
+                st.session_state.resume_updated = False
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": assistant_response})
+        
+        # Display assistant response
+        with st.chat_message("assistant"):
+            st.write(assistant_response)
+        
+        # Force a rerun to update the preview
+        st.rerun()
+    
+    return st.session_state.edited_resume
 
 # Initialize session state
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = 0
-
-# Function to update active tab and provide guidance
-def update_active_tab(new_tab_index):
-    st.session_state.active_tab = new_tab_index
-    st.success(f"✅ Step {new_tab_index} completed! Please click on the '{tab_titles[new_tab_index]}' tab to continue.")
 
 # Main app
 st.set_page_config(page_title="Portfolio Builder", layout="wide")
@@ -391,14 +502,25 @@ with tabs[0]:  # Upload & Edit tab
             if "resume_data" not in st.session_state:
                 resume_data = json.load(resume_file)
                 st.session_state.resume_data = resume_data
+                st.session_state.edited_resume = copy.deepcopy(resume_data)
                 st.success("Resume JSON loaded successfully! You can now edit your information.")
             
-            # Edit resume data
-            st.session_state.edited_resume = edit_resume_data(st.session_state.resume_data)
+            # Display the current resume data (read-only) and chat editor
+            col1, col2 = st.columns([2, 1])
             
+            with col1:
+                st.subheader("Current Resume Preview")
+                display_resume_json(st.session_state.edited_resume)
+            
+            with col2:
+                st.subheader("AI Resume Editor")
+                # LLM-based editor
+                create_llm_based_editor(st.session_state.edited_resume)
+                
             # Button to proceed to theme selection
             if st.button("Continue to Theme Selection", key="continue_to_themes"):
-                update_active_tab(1)
+                st.session_state.active_tab = 1
+                st.success(f"✅ Step 1 completed! Please click on the '2. Choose Theme' tab to continue.")
                 
         except json.JSONDecodeError:
             st.error("Error: The uploaded file is not a valid JSON.")
@@ -406,51 +528,171 @@ with tabs[0]:  # Upload & Edit tab
             st.error(f"An error occurred: {str(e)}")
     else:
         st.info("Please upload your resume JSON file to get started.")
+        
+        # Example JSON
+        example_json = {
+            "about": {
+                "name": "Alex Carter",
+                "location": "San Francisco, CA",
+                "email": "alex.carter@example.com",
+                "phone": "+1-555-123-4567",
+                "linkedin_hyperlink": "https://linkedin.com/in/alexcarter",
+                "github_hyperlink": "https://github.com/alexcarter",
+                "summary": "Passionate software engineer with 3+ years of experience in building scalable web applications and backend systems."
+            },
+            "education": [
+                {
+                    "university": "Stanford University",
+                    "location": "Stanford, CA",
+                    "degree": "Master of Science in Computer Science",
+                    "period": "Sep 2020 - Jun 2022",
+                    "related_coursework": ["Machine Learning", "Distributed Systems", "Database Design"],
+                    "gpa": "3.9"
+                }
+            ],
+            "skills": [
+                {
+                    "category": "Programming Languages",
+                    "skills": ["Python", "JavaScript", "C++"]
+                }
+            ],
+            "experience": [
+                {
+                    "company": "TechNova Inc.",
+                    "position": "Backend Developer",
+                    "location": "Remote",
+                    "period": "Jul 2022 - Present",
+                    "responsibilities": ["Developed RESTful APIs with FastAPI and integrated with PostgreSQL and Redis."]
+                }
+            ],
+            "projects": [
+                {
+                    "name": "AI-Powered Resume Parser",
+                    "description": "Built a FastAPI-based application that parses and analyzes resumes using spaCy and OpenAI.",
+                    "technologies": ["Python", "FastAPI", "spaCy", "OpenAI"],
+                    "url": "https://github.com/alexcarter/resume-parser"
+                }
+            ],
+            "accomplishments": [
+                {
+                    "title": "Winner - Hack the Bay 2023",
+                    "date": "Mar 2023",
+                    "link": "https://devpost.com/software/ai-nurse"
+                }
+            ]
+        }
+        
+        st.expander("See Example JSON Format").code(json.dumps(example_json, indent=2))
 
 with tabs[1]:  # Choose Theme tab
-    if st.session_state.active_tab == 1 and "edited_resume" in st.session_state:
+    if st.session_state.active_tab >= 1 and "edited_resume" in st.session_state:
         display_theme_selector()
         
         if st.session_state.get("theme_selected", False):
             st.success(f"You have selected **{st.session_state.selected_theme}**")
             if st.button("Continue to Preview & Deploy", key="continue_to_deploy"):
-                update_active_tab(2)
+                st.session_state.active_tab = 2
+                st.success(f"✅ Step 2 completed! Please click on the '3. Preview & Deploy' tab to continue.")
     else:
         if st.session_state.active_tab < 1:
             st.warning("Please complete step 1 (Upload & Edit) first.")
         else:
             st.warning("Please upload and edit your resume first.")
+
 with tabs[2]:  # Preview & Deploy tab
-    if st.session_state.active_tab >= 2 and "edited_resume" in st.session_state and "selected_theme" in st.session_state:
+    if st.session_state.active_tab >= 2 and "edited_resume" in st.session_state and st.session_state.get("theme_selected", False):
         st.subheader("Final Review")
         
-        col1, col2 = st.columns([1, 1])
+        # Get username from the correct structure based on new JSON format
+        if "about" in st.session_state.edited_resume and "name" in st.session_state.edited_resume["about"]:
+            username = st.session_state.edited_resume["about"]["name"]
+        else:
+            username = "portfolio"
+            
+        # Display information
+        st.markdown("### Your Information")
+        st.write(f"**Theme Selected**: {st.session_state.selected_theme}")
+        st.write(f"**Portfolio Owner**: {username}")
+
+        st.subheader("Repository Configuration")
+        repo_name_input = st.text_input("Enter the GitHub repository name you'd like to use", key="repo_name_input")
+
+        # Validation state
+        if "repo_valid" not in st.session_state:
+            st.session_state.repo_valid = None
         
-        with col1:
-            st.markdown("### Your Information")
-            st.write(f"**Theme Selected**: {st.session_state.selected_theme}")
-            
-            # Get username from the correct structure
-            if "name" in st.session_state.edited_resume:
-                username = st.session_state.edited_resume["name"]
-            elif "personal_info" in st.session_state.edited_resume and "name" in st.session_state.edited_resume["personal_info"]:
-                username = st.session_state.edited_resume["personal_info"]["name"]
+        #validate repo name
+
+        if repo_name_input and not st.session_state.get("deployed_clicked", False):
+                g =  Github(GITHUB_TOKEN)
+                try:
+                    g.get_user().get_repo(repo_name_input)
+                    st.session_state.repo_valid = False
+                    #st.error(f"A repository named '{repo_name_input}' already exists under your GitHub account. Please choose another name.")
+
+                except:
+                    st.session_state.repo_valid = True
+                    #st.success("Repository name is available!")
+
+        # Show validation message only before deployment
+        if repo_name_input and not st.session_state.get("deploy_clicked", False):
+            if st.session_state.repo_valid:
+                st.success("Repository name available!")
             else:
-                username = "portfolio"
+                st.error(f"A repository named '{repo_name_input}' already exists under your GitHub account. Please choose another name.")
+
+        # Display deployment options
+        st.subheader("Deployment Options")
+        
+        # GitHub Deployment
+        if "deploy_clicked" not in st.session_state:
+            st.session_state.deploy_clicked = False
             
-            st.write(f"**Portfolio Owner**: {username}")
+        if "deployment_url" not in st.session_state:
+            st.session_state.deployment_url = None
             
-            # Display deployment button
-            if st.button("🚀 Generate & Deploy Portfolio", key="final_deploy_button"):
-                with st.spinner("Processing and deploying your portfolio..."):
-                    try:
-                        # Render HTML
-                        html = render_html(
+        if not st.session_state.deploy_clicked:
+            if st.button("🚀 Deploy to GitHub Pages", key="github_deploy_button"):
+                if not repo_name_input:
+                     st.error("Please enter a GitHub repository name before deploying.")
+                elif st.session_state.repo_valid is not True:
+                    st.error("Repository name is not valid. Please choose a unique name.")
+                else:
+                    st.session_state.deploy_clicked = True
+                    html = render_html(
+                        st.session_state.edited_resume,
+                        THEMES[st.session_state.selected_theme]['file']
+                     )
+                #st.session_state.deploy_clicked = True
+                    with st.spinner("Creating repository and uploading files..."):
+                        try:
+                            url = create_github_repo(
+                            repo_name_input.strip(),
+                            html,
                             st.session_state.edited_resume,
                             THEMES[st.session_state.selected_theme]['file']
-                        )
-                        
-                        # Deploy to GitHub
+                            )
+                    
+                            if url:
+                                st.session_state.deployment_url = url
+                                st.info("Repository created! Waiting for GitHub Pages to deploy (about 40 seconds)...")
+                                st.rerun()
+
+                        except Exception as e:
+                            st.error(f"Error deploying portfolio: {str(e)}")
+                            st.session_state.deploy_clicked = False
+
+
+                    
+                # Render HTML
+                html = render_html(
+                    st.session_state.edited_resume,
+                    THEMES[st.session_state.selected_theme]['file']
+                )
+                
+                # Deploy to GitHub
+                with st.spinner("Creating repository and uploading files..."):
+                    try:
                         url = create_github_repo(
                             username,
                             html,
@@ -459,22 +701,30 @@ with tabs[2]:  # Preview & Deploy tab
                         )
                         
                         if url:
-                            st.success(f"✅ Portfolio successfully deployed! View it here: [🔗 {url}]({url})")
-                            st.balloons()
-                            
-                            # Reset for a new portfolio
-                            if st.button("Create Another Portfolio", key="reset_app"):
-                                for key in ["resume_data", "edited_resume", "selected_theme", "active_tab"]:
-                                    if key in st.session_state:
-                                        del st.session_state[key]
-                                st.write("Please refresh the page to start over.")
+                            st.session_state.deployment_url = url
+                            # Start the 15-second wait
+                            st.info("Repository created! Waiting for GitHub Pages to deploy (about 15 seconds)...")
+                            st.rerun()
                     except Exception as e:
                         st.error(f"Error deploying portfolio: {str(e)}")
-        
-        with col2:
-            # Offer JSON download
-            st.markdown("### Download Your Edited Resume")
-            if st.button("Download Edited JSON", key="download_final_json"):
+                        st.session_state.deploy_clicked = False
+        else:
+            # Display a loading message with progress for 40 seconds
+            if st.session_state.deployment_url:
+                with st.spinner("GitHub Pages deployment in progress..."):
+                    # Create a progress bar
+                    progress_bar = st.progress(0)
+                    for i in range(100):
+                        # Update every ~150ms to complete in ~40 seconds
+                        time.sleep(0.40)
+                        progress_bar.progress(i + 1)
+                
+                # After the progress is complete, show success message
+                st.success(f"✅ Portfolio successfully deployed! View it here: [🔗 {st.session_state.deployment_url}]({st.session_state.deployment_url})")
+                st.balloons()
+                
+                # Offer JSON download
+                st.markdown("### Download Your Edited Resume")
                 # Create a temporary file to download the edited JSON
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
                     tmp.write(json.dumps(st.session_state.edited_resume, indent=2).encode())
@@ -492,9 +742,14 @@ with tabs[2]:  # Preview & Deploy tab
                 
                 # Clean up
                 os.unlink(tmp_path)
+            else:
+                st.error("Deployment failed. Please try again.")
+                st.session_state.deploy_clicked = False
     else:
         if st.session_state.active_tab < 2:
             st.warning(f"Please complete steps 1-2 first before deploying.")
+        elif not st.session_state.get("theme_selected", False):
+            st.warning("Please select a theme first.")
         else:
             st.warning("Please upload your resume, edit it, and select a theme first.")
 
@@ -509,6 +764,28 @@ st.sidebar.write(f"**Current Step**: {tab_titles[st.session_state.active_tab]}")
 if st.session_state.active_tab < 2:
     next_step = tab_titles[st.session_state.active_tab + 1]
     st.sidebar.info(f"**Next step**: {next_step}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
