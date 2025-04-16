@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ resume.name|default('IT Professional') }} - Portfolio</title>
+    <title>{{ resume.about.name|default('IT Professional') }} - Portfolio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* CSS Reset and Base Styles with Modern Variables */
@@ -296,14 +296,14 @@
             color: var(--secondary-color);
         }
 
-        /* Certifications Section */
-        .certs-container {
+        /* Accomplishments Section */
+        .accomplishments-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2rem;
         }
 
-        .cert-item {
+        .accomplishment-item {
             background-color: var(--bg-secondary);
             border-radius: var(--border-radius);
             padding: 2rem;
@@ -313,17 +313,29 @@
             border-left: 2px solid var(--secondary-color);
         }
 
-        .cert-item:hover {
+        .accomplishment-item:hover {
             transform: translateY(-5px);
         }
 
-        .cert-item::before {
+        .accomplishment-item::before {
             content: '▹';
             position: absolute;
             left: -12px;
             color: var(--secondary-color);
             font-size: 2.5rem;
             line-height: 1;
+        }
+
+        .accomplishment-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .accomplishment-date {
+            font-family: 'Fira Code', monospace;
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
         }
 
         /* Skills Section */
@@ -616,7 +628,7 @@
             
             .projects-grid,
             .skills-container,
-            .certs-container {
+            .accomplishments-container {
                 grid-template-columns: 1fr;
             }
             
@@ -686,8 +698,8 @@
         <div class="container">
             <div class="nav-content">
                 <a href="#" class="nav-logo">
-                    {% if resume.name is defined %}
-                        {% set name_parts = resume.name.split(' ') %}
+                    {% if resume.about.name is defined %}
+                        {% set name_parts = resume.about.name.split(' ') %}
                         {% if name_parts|length > 1 %}
                             {{ name_parts[0][0] + name_parts[1][0] }}
                         {% else %}
@@ -712,26 +724,30 @@
         <div class="container">
             <div class="header-content">
                 <p class="header-subtitle fade-in">Hi, my name is</p>
-                <h1 class="header-title fade-in delay-1">{{ resume.name }}</h1>
+                <h1 class="header-title fade-in delay-1">{{ resume.about.name }}</h1>
                 <p class="header-description fade-in delay-2">
-                    I'm an IT professional specializing in 
-                    {% if resume.skills is defined and resume.skills %}
-                        {% set top_skills = [] %}
-                        {% for category, skills in resume.skills.items() %}
-                            {% if category == "Programming Languages" and skills|length > 0 %}
-                                {% for skill in skills %}
-                                    {% if loop.index <= 3 and (top_skills.append(skill) or True) %}{% endif %}
-                                {% endfor %}
+                    {% if resume.about.summary is defined %}
+                        {{ resume.about.summary }}
+                    {% else %}
+                        I'm an IT professional specializing in 
+                        {% if resume.skills is defined and resume.skills %}
+                            {% set top_skills = [] %}
+                            {% for skill_group in resume.skills %}
+                                {% if skill_group.category == "Programming Languages" and skill_group.skills|length > 0 %}
+                                    {% for skill in skill_group.skills %}
+                                        {% if loop.index <= 3 and (top_skills.append(skill) or True) %}{% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if top_skills|length > 0 %}
+                                {{ top_skills[0] }}{% if top_skills|length > 1 %}, {{ top_skills[1] }}{% endif %}{% if top_skills|length > 2 %} and {{ top_skills[2] }}{% endif %}.
+                            {% else %}
+                                technology solutions that solve complex problems.
                             {% endif %}
-                        {% endfor %}
-                        
-                        {% if top_skills|length > 0 %}
-                            {{ top_skills[0] }}{% if top_skills|length > 1 %}, {{ top_skills[1] }}{% endif %}{% if top_skills|length > 2 %} and {{ top_skills[2] }}{% endif %}.
                         {% else %}
                             technology solutions that solve complex problems.
                         {% endif %}
-                    {% else %}
-                        technology solutions that solve complex problems.
                     {% endif %}
                 </p>
                 <a href="#contact" class="header-cta fade-in delay-3">Get In Touch</a>
@@ -745,7 +761,7 @@
             <div class="container">
                 <div class="section-title-container">
                     <span class="section-number">01.</span>
-                    <h2 class="section-title">About Me</h2>
+                    <h2 class="section-title">Education</h2>
                     <div class="section-line"></div>
                 </div>
                 
@@ -755,14 +771,8 @@
                     {% for edu in resume.education %}
                     <div class="education-item fade-in">
                         <h4 class="education-degree">{{ edu.degree }}</h4>
-                        <p class="education-school">{{ edu.university }}</p>
-                        <p class="education-date">
-                            {% if edu.expected_graduation is defined %}
-                                Expected Graduation: {{ edu.expected_graduation }}
-                            {% elif edu.period is defined %}
-                                {{ edu.period }}
-                            {% endif %}
-                        </p>
+                        <p class="education-school">{{ edu.university }}{% if edu.location is defined %}, {{ edu.location }}{% endif %}</p>
+                        <p class="education-date">{{ edu.period }}</p>
                         
                         {% if edu.related_coursework is defined and edu.related_coursework %}
                         <div class="education-courses">
@@ -786,24 +796,28 @@
             </div>
         </section>
         
-        <!-- Certifications Section -->
-        <section id="certifications">
+        <!-- Accomplishments Section -->
+        <section id="accomplishments">
             <div class="container">
                 <div class="section-title-container">
                     <span class="section-number">01.5</span>
-                    <h2 class="section-title">Certifications</h2>
+                    <h2 class="section-title">Accomplishments</h2>
                     <div class="section-line"></div>
                 </div>
                 
-                <div class="certs-container">
-                    {% if resume.skills is defined and resume.skills.Certification is defined %}
-                        {% for cert in resume.skills.Certification %}
-                        <div class="cert-item fade-in">
-                            <p>{{ cert }}</p>
+                <div class="accomplishments-container">
+                    {% if resume.accomplishments is defined and resume.accomplishments %}
+                        {% for accomplishment in resume.accomplishments %}
+                        <div class="accomplishment-item fade-in">
+                            <h4 class="accomplishment-title">{{ accomplishment.title }}</h4>
+                            <p class="accomplishment-date">{{ accomplishment.date }}</p>
+                            {% if accomplishment.link is defined %}
+                            <a href="{{ accomplishment.link }}" target="_blank" rel="noopener noreferrer">View Details →</a>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     {% else %}
-                        <p>No certifications listed</p>
+                        <p>No accomplishments listed</p>
                     {% endif %}
                 </div>
             </div>
@@ -820,17 +834,15 @@
                 
                 <div class="skills-container">
                     {% if resume.skills is defined and resume.skills %}
-                        {% for category, skills in resume.skills.items() %}
-                            {% if category != "Certification" %}
-                            <div class="skill-category fade-in">
-                                <h3 class="skill-title">{{ category }}</h3>
-                                <div class="skill-list">
-                                    {% for skill in skills %}
-                                    <span class="skill-tag">{{ skill }}</span>
-                                    {% endfor %}
-                                </div>
+                        {% for skill_group in resume.skills %}
+                        <div class="skill-category fade-in">
+                            <h3 class="skill-title">{{ skill_group.category }}</h3>
+                            <div class="skill-list">
+                                {% for skill in skill_group.skills %}
+                                <span class="skill-tag">{{ skill }}</span>
+                                {% endfor %}
                             </div>
-                            {% endif %}
+                        </div>
                         {% endfor %}
                     {% else %}
                         <p>Skills information not available</p>
@@ -848,10 +860,10 @@
                     <div class="section-line"></div>
                 </div>
                 
-                {% if resume.work_experience is defined and resume.work_experience %}
-                    {% for job in resume.work_experience %}
+                {% if resume.experience is defined and resume.experience %}
+                    {% for job in resume.experience %}
                     <div class="job fade-in">
-                        <h3 class="job-title">{{ job.title }}</h3>
+                        <h3 class="job-title">{{ job.position }}</h3>
                         <p class="job-company">{{ job.company }}</p>
                         <p class="job-duration">
                             {{ job.period }}
@@ -923,31 +935,31 @@
                     <p class="contact-subheading">
                         I'm currently looking for new opportunities. Whether you have a question or just want to say hi, I'll get back to you!
                     </p>
-                    {% if resume is defined %}
-                        {% if resume.email is defined %}
-                        <p>{{ resume.email }}</p>
+                    {% if resume.about is defined %}
+                        {% if resume.about.email is defined %}
+                        <p>{{ resume.about.email }}</p>
                         {% endif %}
-                        {% if resume.phone is defined %}
-                        <p>{{ resume.phone }}</p>
+                        {% if resume.about.phone is defined %}
+                        <p>{{ resume.about.phone }}</p>
                         {% endif %}
-                        {% if resume.location is defined %}
-                        <p>{{ resume.location }}</p>
+                        {% if resume.about.location is defined %}
+                        <p>{{ resume.about.location }}</p>
                         {% endif %}
                     {% endif %}
                     
                     <div class="contact-links">
-                        {% if resume is defined and resume.LinkedIn is defined %}
-                        <a href="{{ resume.LinkedIn }}" class="contact-link" target="_blank" rel="noopener noreferrer">
+                        {% if resume.about is defined and resume.about.linkedin_hyperlink is defined %}
+                        <a href="{{ resume.about.linkedin_hyperlink }}" class="contact-link" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-linkedin-in"></i>
                         </a>
                         {% endif %}
-                        {% if resume is defined and resume.GitHub is defined %}
-                        <a href="{{ resume.GitHub }}" class="contact-link" target="_blank" rel="noopener noreferrer">
+                        {% if resume.about is defined and resume.about.github_hyperlink is defined %}
+                        <a href="{{ resume.about.github_hyperlink }}" class="contact-link" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-github"></i>
                         </a>
                         {% endif %}
-                        {% if resume is defined and resume.email is defined %}
-                        <a href="mailto:{{ resume.email }}" class="contact-link">
+                        {% if resume.about is defined and resume.about.email is defined %}
+                        <a href="mailto:{{ resume.about.email }}" class="contact-link">
                             <i class="fas fa-envelope"></i>
                         </a>
                         {% endif %}
@@ -960,7 +972,7 @@
     <footer>
         <div class="container">
             <p class="footer-text">
-                Designed & Built with <span class="footer-heart">❤</span> by {{ resume.name|default('Portfolio Generator') }} © <span id="current-year">2025</span>
+                Designed & Built with <span class="footer-heart">❤</span> by {{ resume.about.name|default('Portfolio Generator') }} © <span id="current-year">2025</span>
             </p>
         </div>
     </footer>
