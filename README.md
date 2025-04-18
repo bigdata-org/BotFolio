@@ -50,10 +50,6 @@ A highly interactive, fast, and automated portfolio-building pipeline powered by
  
   - To avoid duplication and resource collisions, repositories are checked against organization-wide existence.
  
-- **Test Suite**:
- 
-  - `pytest` is used to validate if **LLM responses** satisfy user requests and intent.
- 
 ---
  
 ## 💼 2. LinkedIn Job Scraping & Data Processing
