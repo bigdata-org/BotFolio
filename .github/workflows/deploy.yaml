@@ -43,7 +43,9 @@ jobs:
 
       # Build Docker image
       - name: Build Docker image
-        run: docker build --platform=linux/amd64 -t gcr.io/${{ env.PROJECT_ID }}/botfolio-api .
+        run: |
+          cd backend
+          docker build --platform=linux/amd64 -t gcr.io/${{ env.PROJECT_ID }}/botfolio-api .
       
       # Push Docker image to Google Container Registry
       - name: Push Docker image
