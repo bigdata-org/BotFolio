@@ -9,7 +9,7 @@ on:
 env:
   # Global environment variables available to all jobs and steps
   PROJECT_ID: botfolio-456006
-  SERVICE_NAME: botfolio-apis
+  SERVICE_NAME: botfolio-fastapis
   REGION: us-central1
 
 jobs:
@@ -45,17 +45,17 @@ jobs:
       - name: Build Docker image
         run: |
           cd backend
-          docker build --platform=linux/amd64 -t gcr.io/${{ env.PROJECT_ID }}/botfolio-api .
+          docker build --platform=linux/amd64 -t gcr.io/${{ env.PROJECT_ID }}/botfolio-fastapis .
       
       # Push Docker image to Google Container Registry
       - name: Push Docker image
-        run: docker push gcr.io/${{ env.PROJECT_ID }}/botfolio-api
+        run: docker push gcr.io/${{ env.PROJECT_ID }}/botfolio-fastapis
       
       # Deploy to Cloud Run
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/botfolio-api \
+            --image gcr.io/${{ env.PROJECT_ID }}/botfolio-fastapis \
             --platform managed \
             --region ${{ env.REGION }} \
             --memory 2Gi \
